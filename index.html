@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PENGEMBARA WANG: MISI KE ISTANA EMAS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Lexend:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .font-game {
+            font-family: 'Fredoka One', cursive, sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 4px;
+        }
+        
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+            50% { box-shadow: 0 0 30px rgba(245, 158, 11, 1); }
+        }
+        .pulse-gold {
+            animation: pulse-gold 2s infinite;
+        }
+
+        /* Certificate Print CSS */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificateContainer, #certificateContainer * {
+                visibility: visible;
+            }
+            #certificateContainer {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-slate-900 text-slate-100">
+
+    <!-- MAIN GAME WRAPPER -->
+    <div id="gameContainer" class="relative w-full h-screen max-w-5xl max-h-[700px] bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border-4 border-amber-500 flex flex-col">
+
+        <!-- TOP BAR / HUD -->
+        <div id="hud" class="hidden absolute top-0 left-0 right-0 z-20 bg-slate-900/90 backdrop-blur border-b-2 border-amber-500/40 px-4 py-2 flex justify-between items-center text-sm md:text-base">
+            <!-- Player Info -->
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500/20 border border-amber-500/50 px-3 py-1 rounded-full flex items-center gap-2">
+                    <i class="fa-solid fa-user-astronaut text-amber-400"></i>
+                    <span id="hudPlayerName" class="font-bold text-amber-300">Pengembara</span>
+                </div>
+                <div class="bg-rose-500/20 border border-rose-500/50 px-3 py-1 rounded-full flex items-center gap-1.5 text-rose-400 font-bold">
+                    <i class="fa-solid fa-heart animate-pulse"></i>
+                    <span id="hudLives">3</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-center space-x-4 font-game">
+                <div class="flex items-center gap-1.5 text-yellow-400 bg-yellow-500/10 px-3 py-1 rounded-lg border border-yellow-500/30">
+                    <i class="fa-solid fa-coins text-yellow-400 text-lg"></i>
+                    <span id="hudCoins">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/30">
+                    <i class="fa-solid fa-star text-emerald-400 text-lg"></i>
+                    <span id="hudScore">0</span>
+                </div>
+                <div class="text-xs md:text-sm bg-blue-500/20 px-3 py-1 rounded-lg border border-blue-500/40 text-blue-300">
+                    Kawasan: <span id="hudZone" class="text-amber-300 font-bold">1 (Padang Syiling)</span>
+                </div>
+            </div>
+
+            <!-- Pause / Sound Control -->
+            <div class="flex items-center space-x-2">
+                <button id="btnAudio" onclick="toggleAudio()" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-amber-400 transition">
+                    <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="pauseGame()" class="w-9 h-9 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-full flex items-center justify-center transition">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- CANVAS GAMEPLAY -->
+        <canvas id="gameCanvas" class="w-full h-full block bg-slate-950"></canvas>
+
+        <!-- TOUCH CONTROLS (Mobile / Tablet) -->
+        <div id="touchControls" class="hidden absolute bottom-4 left-0 right-0 z-20 px-6 flex justify-between items-center pointer-events-none">
+            <div class="flex space-x-3 pointer-events-auto">
+                <button id="btnLeft" class="w-16 h-16 bg-slate-800/80 active:bg-amber-500 border-2 border-amber-400 text-amber-300 active:text-slate-950 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="btnRight" class="w-16 h-16 bg-slate-800/80 active:bg-amber-500 border-2 border-amber-400 text-amber-300 active:text-slate-950 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <div class="pointer-events-auto">
+                <button id="btnJump" class="w-20 h-20 bg-amber-500 active:bg-amber-600 text-slate-950 font-bold rounded-2xl flex flex-col items-center justify-center text-xl shadow-xl border-2 border-amber-300 transition">
+                    <i class="fa-solid fa-angles-up"></i>
+                    <span class="text-xs font-bold uppercase mt-1">Lompat</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN: WELCOME / START -->
+        <div id="screenStart" class="absolute inset-0 z-30 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+            <div class="max-w-xl w-full bg-slate-800/90 border-2 border-amber-500/50 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-amber-400">
+                    <i class="fa-solid fa-crown text-9xl"></i>
+                </div>
+
+                <div class="inline-block bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold px-4 py-1.5 rounded-full mb-3 uppercase tracking-wider">
+                    Matematik Pendidikan Khas Tahun 4
+                </div>
+                <h1 class="text-3xl md:text-4xl font-game text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 mb-2 drop-shadow">
+                    PENGEMBARA WANG
+                </h1>
+                <h2 class="text-lg md:text-xl font-bold text-amber-400 mb-6">MISI KE ISTANA EMAS</h2>
+
+                <!-- Form Name & Class -->
+                <div class="space-y-4 mb-6 text-left max-w-md mx-auto">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Nama Murid:</label>
+                        <input type="text" id="inputName" placeholder="Contoh: Muhammad Ali" class="w-full bg-slate-900 border-2 border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-amber-300 font-semibold outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kelas:</label>
+                        <input type="text" id="inputClass" placeholder="Contoh: 4 Gemilang" class="w-full bg-slate-900 border-2 border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-amber-300 font-semibold outline-none transition">
+                    </div>
+                </div>
+
+                <!-- Game Instructions -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 text-xs md:text-sm text-slate-300 text-left mb-6 space-y-2 border border-slate-700">
+                    <p class="font-bold text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-compass"></i> Cara Bermain:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300">
+                        <li>Gunakan <span class="text-amber-300 font-bold">Anak Panah</span> / <span class="text-amber-300 font-bold">Butang Skrin</span> untuk bergerak & melompat.</li>
+                        <li>Kumpul syiling emas & sentuh <span class="text-yellow-400 font-bold">Blok Tanda Soal (?)</span> untuk soalan kuiz.</li>
+                        <li>Jawapan Betul: <span class="text-emerald-400 font-bold">+5 Markah</span> | Jawapan Salah: <span class="text-rose-400 font-bold">-1 Markah & -1 Nyawa</span>.</li>
+                        <li>Jawab 10 soalan penolakan wang dan buka jalan menuju ke Istana Emas!</li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button onclick="startGame()" class="pulse-gold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-game text-xl px-8 py-3.5 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> MULA BERMAIN
+                    </button>
+                    <button onclick="showLeaderboard()" class="bg-slate-700 hover:bg-slate-600 text-amber-300 font-bold px-5 py-3.5 rounded-2xl border border-slate-600 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trophy text-yellow-400"></i> Carta Pencapaian
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: QUIZ MODAL -->
+        <div id="screenQuiz" class="hidden absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="max-w-2xl w-full bg-slate-800 border-2 border-amber-500 rounded-3xl p-6 shadow-2xl relative flex flex-col">
+                <!-- Quiz Header -->
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                    <span id="quizNumber" class="bg-amber-500 text-slate-950 font-game px-4 py-1 rounded-full text-sm">
+                        SOALAN 1 / 10
+                    </span>
+                    <div class="text-xs font-bold text-slate-400 flex gap-4">
+                        <span>Skor: <span id="quizScore" class="text-emerald-400 font-bold">0</span></span>
+                        <span>Nyawa: <span id="quizLives" class="text-rose-400 font-bold">3</span></span>
+                    </div>
+                </div>
+
+                <!-- Question Text -->
+                <div class="mb-6">
+                    <p id="quizQuestion" class="text-lg md:text-xl font-bold text-slate-100 leading-relaxed mb-3">
+                        -- Text Soalan --
+                    </p>
+                    
+                    <!-- Visual Helper / Textbook Method Display -->
+                    <div id="quizVisualHelper" class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 text-center">
+                        <div id="mathEquation" class="font-game text-2xl md:text-3xl text-amber-300 tracking-wider mb-2">
+                            RM0.00 - RM0.00 = ?
+                        </div>
+                        <p class="text-xs text-slate-400">Kira nilai baki wang di atas dengan teliti.</p>
+                    </div>
+                </div>
+
+                <!-- Answer Options -->
+                <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <!-- Dynamic Buttons Generated Here -->
+                </div>
+
+                <!-- Feedback Area (Post-Answer) -->
+                <div id="quizFeedback" class="hidden bg-slate-900 border border-slate-700 rounded-2xl p-4 mb-4 text-sm leading-relaxed">
+                    <div id="feedbackTitle" class="font-game text-lg mb-1 flex items-center gap-2"></div>
+                    <div id="feedbackBody" class="text-slate-300 text-xs md:text-sm"></div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex justify-end mt-auto">
+                    <button id="btnContinueQuiz" onclick="continueAfterQuiz()" class="hidden bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-game text-lg px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+                        TERUSKAN PENGEMBARAAN <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: GAMEOVER -->
+        <div id="screenGameOver" class="hidden absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+            <div class="max-w-md w-full bg-slate-800 border-2 border-rose-500 rounded-3xl p-8 shadow-2xl">
+                <div class="w-20 h-20 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl border border-rose-500/40 animate-bounce">
+                    <i class="fa-solid fa-heart-crack"></i>
+                </div>
+                <h2 class="text-3xl font-game text-rose-400 mb-2">PERMAINAN TAMAT</h2>
+                <p class="text-slate-300 text-sm mb-6">Nyawa anda telah habis. Jangan putus asa, mari cuba lagi!</p>
+                
+                <div class="bg-slate-900 rounded-2xl p-4 mb-6 text-sm space-y-2 text-left">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Soalan Selesai:</span>
+                        <span id="goQuestions" class="font-bold text-amber-300">0/10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Jumlah Syiling:</span>
+                        <span id="goCoins" class="font-bold text-yellow-400">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Markah Akhir:</span>
+                        <span id="goScore" class="font-bold text-emerald-400">0</span>
+                    </div>
+                </div>
+
+                <button onclick="resetGame()" class="w-full bg-rose-500 hover:bg-rose-600 text-slate-950 font-game text-lg py-3 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> CUBA LAGI
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN: VICTORY / END -->
+        <div id="screenVictory" class="hidden absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+            <div class="max-w-2xl w-full bg-slate-800 border-2 border-amber-400 rounded-3xl p-6 md:p-8 shadow-2xl my-auto">
+                <div class="w-20 h-20 bg-amber-400/20 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-3 text-4xl border border-yellow-400/40 animate-float">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-game text-amber-300 mb-1">TAHNIAH, PENGEMBARA WANG!</h1>
+                <p id="victorySubtitle" class="text-slate-300 text-sm mb-6">Kamu telah berjaya sampai ke Istana Emas!</p>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                        <div class="text-xs text-slate-400 uppercase">Jumlah Markah</div>
+                        <div id="vicScore" class="text-2xl font-game text-emerald-400">0</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                        <div class="text-xs text-slate-400 uppercase">Jawapan Betul</div>
+                        <div id="vicCorrect" class="text-2xl font-game text-amber-300">0/10</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                        <div class="text-xs text-slate-400 uppercase">Syiling Emas</div>
+                        <div id="vicCoins" class="text-2xl font-game text-yellow-400">0</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                        <div class="text-xs text-slate-400 uppercase">Baki Nyawa</div>
+                        <div id="vicLives" class="text-2xl font-game text-rose-400">0</div>
+                    </div>
+                </div>
+
+                <!-- Encouragement Message -->
+                <div id="victoryEncouragement" class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-amber-300 text-sm font-bold mb-6">
+                    "Hebat! Kamu berjaya menguasai tolak nilai wang!"
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <button onclick="generateCertificate()" class="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-game px-6 py-3 rounded-xl shadow-lg hover:brightness-110 transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-certificate"></i> JANA SIJIL DIGITAL
+                    </button>
+                    <button onclick="reviewQuestionsModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold px-5 py-3 rounded-xl border border-slate-600 transition flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> LIHAT SEMULA SOALAN
+                    </button>
+                    <button onclick="resetGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-3 rounded-xl shadow-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> MAIN SEMULA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN: LEADERBOARD -->
+        <div id="screenLeaderboard" class="hidden absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
+            <div class="max-w-xl w-full bg-slate-800 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+                    <h2 class="text-2xl font-game text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-yellow-400"></i> CARTA PENCAPAIAN
+                    </h2>
+                    <button onclick="closeLeaderboard()" class="text-slate-400 hover:text-white text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto flex-1 pr-1 space-y-2 mb-4" id="leaderboardList">
+                    <!-- Dynamic List -->
+                </div>
+
+                <button onclick="closeLeaderboard()" class="w-full bg-slate-700 hover:bg-slate-600 text-amber-300 font-bold py-2.5 rounded-xl border border-slate-600 transition">
+                    TUTUP
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN: REVIEW QUESTIONS -->
+        <div id="screenReview" class="hidden absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
+            <div class="max-w-2xl w-full bg-slate-800 border-2 border-slate-700 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+                    <h2 class="text-xl font-game text-amber-300">SEMAKAN 10 SOALAN MATEMATIK</h2>
+                    <button onclick="closeReview()" class="text-slate-400 hover:text-white text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto flex-1 pr-2 space-y-4 text-xs md:text-sm" id="reviewList">
+                    <!-- Dynamic Review -->
+                </div>
+
+                <button onclick="closeReview()" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-amber-300 font-bold py-2.5 rounded-xl border border-slate-600 transition">
+                    KEMBALI KE KEPUTUSAN
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CERTIFICATE PRINT CONTAINER (HIDDEN UNTIL PRINT) -->
+    <div id="certificateContainer" class="hidden p-8 border-8 border-amber-600 bg-amber-50 text-slate-900 rounded-3xl text-center max-w-3xl mx-auto my-6 shadow-2xl relative">
+        <div class="border-2 border-amber-500 p-8 rounded-2xl bg-white">
+            <div class="flex justify-between items-center mb-6">
+                <i class="fa-solid fa-crown text-amber-500 text-4xl"></i>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">SIJIL PENCAPAIAN DIGITAL</span>
+                <i class="fa-solid fa-award text-amber-500 text-4xl"></i>
+            </div>
+
+            <h1 class="text-3xl font-serif font-bold text-amber-800 mb-1">SIJIL PENGUASAAN MATEMATIK</h1>
+            <p class="text-xs text-amber-700 font-semibold mb-6">PENDIDIKAN KHAS KSSR TAHUN 4 (TOLAK NILAI WANG)</p>
+
+            <p class="text-sm text-slate-600 mb-2">Dengan ini disahkan bahawa:</p>
+            <h2 id="certName" class="text-2xl font-bold text-slate-900 border-b-2 border-amber-400 inline-block px-8 py-1 mb-2">Nama Murid</h2>
+            <p id="certClass" class="text-sm font-semibold text-amber-800 mb-6">Kelas: 4 Gemilang</p>
+
+            <p class="text-sm text-slate-700 max-w-lg mx-auto mb-8 leading-relaxed">
+                Telah berjaya menyelesaikan tugasan pengembaraan interaktif <span class="font-bold text-amber-900">PENGEMBARA WANG: MISI KE ISTANA EMAS</span> dan menguasai konsep penolakan nilai wang dengan cemerlang.
+            </p>
+
+            <div class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8 bg-amber-50 p-4 rounded-xl border border-amber-200 text-xs">
+                <div>
+                    <div class="text-slate-500">Markah</div>
+                    <div id="certScore" class="font-bold text-amber-900 text-lg">0</div>
+                </div>
+                <div>
+                    <div class="text-slate-500">Jawapan Betul</div>
+                    <div id="certCorrect" class="font-bold text-emerald-700 text-lg">0/10</div>
+                </div>
+                <div>
+                    <div class="text-slate-500">Syiling Emas</div>
+                    <div id="certCoins" class="font-bold text-yellow-700 text-lg">0</div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end pt-8 border-t border-slate-200 text-xs">
+                <div class="text-left">
+                    <p class="font-bold text-slate-800">PENGEMBARA WANG 2D</p>
+                    <p class="text-slate-500" id="certDate">Tarikh: 23/10/2026</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-32 border-b border-slate-400 mb-1"></div>
+                    <p class="font-bold text-slate-700">Tandatangan Guru / Penilai</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-6 no-print flex gap-4 justify-center">
+            <button onclick="window.print()" class="bg-amber-600 text-white font-bold px-6 py-2 rounded-xl shadow hover:bg-amber-700">
+                <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+            </button>
+            <button onclick="closeCertificate()" class="bg-slate-700 text-slate-200 font-bold px-6 py-2 rounded-xl hover:bg-slate-600">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script>
+        /* ==========================================
+           1. GAME QUESTIONS (10 KSSR SUBTRACTION)
+        ========================================== */
+        const quizData = [
+            {
+                id: 1,
+                question: "Adam mempunyai RM70.50. Dia membeli buku cerita berharga RM32.00. Berapakah baki wang Adam?",
+                eq: "RM70.50 - RM32.00 = ?",
+                options: ["RM38.50", "RM42.50", "RM38.00", "RM48.50"],
+                answer: 0, // A
+                explanation: "RM70.50 − RM32.00 = RM38.50. Susun mengikut nilai tempat sen dan ringgit dengan betul."
+            },
+            {
+                id: 2,
+                question: "Harga sebuah gitar ialah RM92.35. Harga sebuah tamborin ialah RM67.90. Berapakah beza harga kedua-dua alat muzik?",
+                eq: "RM92.35 - RM67.90 = ?",
+                options: ["RM25.45", "RM24.45", "RM34.45", "RM24.55"],
+                answer: 1, // B
+                explanation: "RM92.35 − RM67.90 = RM24.45. Pinjam 1 ringgit (100 sen) dari nilai sebelah jika sen tidak cukup."
+            },
+            {
+                id: 3,
+                question: "Kira baki penolakan nilai wang berikut:",
+                eq: "RM53.00 - RM11.00 = ?",
+                options: ["RM42.00", "RM41.00", "RM44.00", "RM32.00"],
+                answer: 0, // A
+                explanation: "RM53.00 − RM11.00 = RM42.00."
+            },
+            {
+                id: 4,
+                question: "Kira baki penolakan nilai wang berikut:",
+                eq: "RM71.00 - RM0.70 = ?",
+                options: ["RM70.70", "RM70.30", "RM71.30", "RM70.00"],
+                answer: 1, // B
+                explanation: "RM71.00 − RM0.70 = RM70.30 (70 sen ditolak daripada RM1)."
+            },
+            {
+                id: 5,
+                question: "Kira baki penolakan nilai wang berikut:",
+                eq: "RM66.92 - RM38.19 = ?",
+                options: ["RM28.73", "RM29.73", "RM27.83", "RM38.73"],
+                answer: 0, // A
+                explanation: "RM66.92 − RM38.19 = RM28.73."
+            },
+            {
+                id: 6,
+                question: "Ali mempunyai RM100.00. Dia membeli beg berharga RM9.99. Berapakah baki wang Ali?",
+                eq: "RM100.00 - RM9.99 = ?",
+                options: ["RM90.01", "RM91.01", "RM89.01", "RM90.99"],
+                answer: 0, // A
+                explanation: "RM100.00 − RM9.99 = RM90.01."
+            },
+            {
+                id: 7,
+                question: "Sebuah buku berharga RM18.50. Sebuah pensel berharga RM2.30. Berapakah beza harga kedua-duanya?",
+                eq: "RM18.50 - RM2.30 = ?",
+                options: ["RM16.20", "RM15.20", "RM20.80", "RM16.80"],
+                answer: 0, // A
+                explanation: "RM18.50 − RM2.30 = RM16.20."
+            },
+            {
+                id: 8,
+                question: "Siti mempunyai RM50.00. Dia membeli kasut berharga RM36.75. Berapakah baki wang Siti?",
+                eq: "RM50.00 - RM36.75 = ?",
+                options: ["RM13.25", "RM14.25", "RM13.75", "RM12.25"],
+                answer: 0, // A
+                explanation: "RM50.00 − RM36.75 = RM13.25."
+            },
+            {
+                id: 9,
+                question: "Harga sebuah beg ialah RM45.90. Harga sebuah kotak pensel ialah RM12.65. Berapakah beza harga kedua-duanya?",
+                eq: "RM45.90 - RM12.65 = ?",
+                options: ["RM33.25", "RM32.25", "RM34.25", "RM33.35"],
+                answer: 0, // A
+                explanation: "RM45.90 − RM12.65 = RM33.25."
+            },
+            {
+                id: 10,
+                question: "Mei Ling mempunyai RM80.00. Dia membeli dua buah buku dengan jumlah harga RM47.85. Berapakah baki wang Mei Ling?",
+                eq: "RM80.00 - RM47.85 = ?",
+                options: ["RM32.15", "RM33.15", "RM32.85", "RM42.15"],
+                answer: 0, // A
+                explanation: "RM80.00 − RM47.85 = RM32.15."
+            }
+        ];
+
+        /* ==========================================
+           2. AUDIO SYNTHESIZER (WEB AUDIO API - CHIPTUNE)
+        ========================================== */
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            document.getElementById('audioIcon').className = isAudioMuted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high text-amber-400";
+        }
+
+        function playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function soundCoin() {
+            playTone(987.77, 'sine', 0.08, 0.15);
+            setTimeout(() => playTone(1318.51, 'sine', 0.15, 0.15), 80);
+        }
+
+        function soundJump() {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {}
+        }
+
+        function soundCorrect() {
+            playTone(523.25, 'triangle', 0.1, 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.2), 100);
+            setTimeout(() => playTone(783.99, 'triangle', 0.1, 0.2), 200);
+            setTimeout(() => playTone(1046.50, 'triangle', 0.25, 0.2), 300);
+        }
+
+        function soundWrong() {
+            playTone(220, 'sawtooth', 0.15, 0.2);
+            setTimeout(() => playTone(180, 'sawtooth', 0.25, 0.2), 150);
+        }
+
+        function soundVictory() {
+            const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+            notes.forEach((freq, idx) => {
+                setTimeout(() => playTone(freq, 'triangle', 0.2, 0.2), idx * 120);
+            });
+        }
+
+        /* ==========================================
+           3. CANVAS ENGINE & GAME STATE
+        ========================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State Variables
+        let player = {
+            name: "Murid",
+            class: "4 Gemilang",
+            x: 80,
+            y: 0,
+            width: 36,
+            height: 48,
+            vx: 0,
+            vy: 0,
+            speed: 4.5,
+            jumpPower: -11,
+            grounded: false,
+            facing: 'right'
+        };
+
+        let gameState = {
+            active: false,
+            paused: false,
+            score: 0,
+            lives: 3,
+            coinsCollected: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            currentZone: 1, // 1: Padang Syiling, 2: Hutan Wang, 3: Gunung Emas
+            activeQuestionBlock: null,
+            answeredQuestions: new Set(),
+            userAnswersHistory: []
+        };
+
+        const gravity = 0.55;
+        let cameraX = 0;
+        const levelWidth = 3600;
+
+        // Input Keys
+        const keys = {
+            left: false,
+            right: false,
+            up: false
+        };
+
+        // Level Elements Arrays
+        let platforms = [];
+        let coins = [];
+        let questionBlocks = [];
+        let castleGoal = { x: 3350, y: 0, w: 140, h: 140 };
+
+        /* ==========================================
+           4. LEVEL DESIGN GENERATOR
+        ========================================== */
+        function initLevel() {
+            platforms = [];
+            coins = [];
+            questionBlocks = [];
+
+            // Ground Floor
+            platforms.push({ x: 0, y: 520, w: 3600, h: 100, type: 'ground' });
+
+            // Zone 1: Padang Syiling (x: 0 - 1100)
+            platforms.push({ x: 250, y: 420, w: 160, h: 20 });
+            platforms.push({ x: 480, y: 340, w: 180, h: 20 });
+            platforms.push({ x: 720, y: 420, w: 160, h: 20 });
+            platforms.push({ x: 920, y: 320, w: 180, h: 20 });
+
+            // Zone 2: Hutan Wang (x: 1100 - 2300)
+            platforms.push({ x: 1180, y: 430, w: 140, h: 20 });
+            platforms.push({ x: 1380, y: 350, w: 160, h: 20 });
+            platforms.push({ x: 1600, y: 270, w: 180, h: 20 });
+            platforms.push({ x: 1840, y: 360, w: 160, h: 20 });
+            platforms.push({ x: 2060, y: 440, w: 180, h: 20 });
+
+            // Zone 3: Gunung Emas (x: 2300 - 3600)
+            platforms.push({ x: 2320, y: 370, w: 160, h: 20 });
+            platforms.push({ x: 2540, y: 290, w: 180, h: 20 });
+            platforms.push({ x: 2780, y: 380, w: 160, h: 20 });
+            platforms.push({ x: 3000, y: 280, w: 200, h: 20 });
+
+            // Castle Floor Platform
+            castleGoal.y = 520 - castleGoal.h;
+
+            // Generate 10 Question Blocks along the path
+            const qXPositions = [320, 560, 800, 1240, 1450, 1680, 1920, 2400, 2620, 3080];
+            const qYPositions = [360, 280, 360, 370, 290, 210, 300, 310, 230, 220];
+
+            for (let i = 0; i < 10; i++) {
+                questionBlocks.push({
+                    id: i + 1,
+                    x: qXPositions[i],
+                    y: qYPositions[i],
+                    w: 40,
+                    h: 40,
+                    solved: false,
+                    questionData: quizData[i]
+                });
+            }
+
+            // Generate Coins along platforms
+            for (let x = 150; x < 3200; x += 70) {
+                // Avoid putting coins inside question blocks
+                if (!qXPositions.some(px => Math.abs(px - x) < 30)) {
+                    coins.push({
+                        x: x,
+                        y: 470 - (Math.sin(x) * 80),
+                        r: 9,
+                        collected: false
+                    });
+                }
+            }
+        }
+
+        /* ==========================================
+           5. RESIZE & TOUCH CONTROLS
+        ========================================== */
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Keyboard Event Listeners
+        window.addEventListener('keydown', (e) => {
+            if (!gameState.active || gameState.paused) return;
+            initAudio();
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && player.grounded) {
+                keys.up = true;
+                player.vy = player.jumpPower;
+                player.grounded = false;
+                soundJump();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.up = false;
+        });
+
+        // Touch Control Listeners
+        function setupTouchControls() {
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnJump = document.getElementById('btnJump');
+
+            const bindTouch = (elem, keyName) => {
+                elem.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    initAudio();
+                    if (keyName === 'up' && player.grounded) {
+                        player.vy = player.jumpPower;
+                        player.grounded = false;
+                        soundJump();
+                    }
+                    keys[keyName] = true;
+                });
+                elem.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    keys[keyName] = false;
+                });
+            };
+
+            bindTouch(btnLeft, 'left');
+            bindTouch(btnRight, 'right');
+            bindTouch(btnJump, 'up');
+
+            // Detect touch device to show controls
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('touchControls').classList.remove('hidden');
+            }
+        }
+
+        /* ==========================================
+           6. GAME LOOP & RENDERING
+        ========================================== */
+        function updatePlayer() {
+            if (!gameState.active || gameState.paused) return;
+
+            // Horizontal Movement
+            if (keys.left) {
+                player.vx = -player.speed;
+                player.facing = 'left';
+            } else if (keys.right) {
+                player.vx = player.speed;
+                player.facing = 'right';
+            } else {
+                player.vx = 0;
+            }
+
+            // Apply Gravity
+            player.vy += gravity;
+
+            // New Positions
+            let nextX = player.x + player.vx;
+            let nextY = player.y + player.vy;
+
+            // World Bounds
+            if (nextX < 0) nextX = 0;
+            if (nextX + player.width > levelWidth) nextX = levelWidth - player.width;
+
+            // Platform Collision Logic
+            player.grounded = false;
+
+            for (let plat of platforms) {
+                // AABB Collision Test
+                if (nextX < plat.x + plat.w &&
+                    nextX + player.width > plat.x &&
+                    player.y + player.height <= plat.y &&
+                    nextY + player.height >= plat.y) {
+                    
+                    // Landed on top of platform
+                    nextY = plat.y - player.height;
+                    player.vy = 0;
+                    player.grounded = true;
+                }
+            }
+
+            player.x = nextX;
+            player.y = nextY;
+
+            // Camera Tracking Player
+            cameraX = player.x - canvas.width / 3;
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
+
+            // Update Current Zone Indicator
+            if (player.x < 1100) {
+                gameState.currentZone = 1;
+                document.getElementById('hudZone').textContent = "1 (Padang Syiling)";
+            } else if (player.x < 2300) {
+                gameState.currentZone = 2;
+                document.getElementById('hudZone').textContent = "2 (Hutan Wang)";
+            } else {
+                gameState.currentZone = 3;
+                document.getElementById('hudZone').textContent = "3 (Gunung Emas)";
+            }
+
+            // Coin Collision
+            coins.forEach(c => {
+                if (!c.collected) {
+                    let dx = (player.x + player.width / 2) - c.x;
+                    let dy = (player.y + player.height / 2) - c.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < c.r + player.width / 2) {
+                        c.collected = true;
+                        gameState.coinsCollected++;
+                        soundCoin();
+                        updateHUD();
+                    }
+                }
+            });
+
+            // Question Block Collision
+            questionBlocks.forEach(qb => {
+                if (!qb.solved) {
+                    if (player.x < qb.x + qb.w &&
+                        player.x + player.width > qb.x &&
+                        player.y < qb.y + qb.h &&
+                        player.y + player.height > qb.y) {
+                        
+                        // Trigger Quiz
+                        triggerQuiz(qb);
+                    }
+                }
+            });
+
+            // Castle Goal Reach Test (Requires all 10 answered or reaching area)
+            if (player.x + player.width >= castleGoal.x + 30) {
+                triggerVictory();
+            }
+        }
+
+        /* DRAWING GRAPHICS ON CANVAS */
+        function drawBackground() {
+            // Sky Gradient based on zone
+            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            if (gameState.currentZone === 1) {
+                grad.addColorStop(0, '#38bdf8');
+                grad.addColorStop(1, '#bae6fd');
+            } else if (gameState.currentZone === 2) {
+                grad.addColorStop(0, '#0284c7');
+                grad.addColorStop(1, '#7dd3fc');
+            } else {
+                grad.addColorStop(0, '#1e1b4b');
+                grad.addColorStop(1, '#4338ca');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Parallax Clouds/Hills
+            ctx.save();
+            ctx.translate(-cameraX * 0.3, 0);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath();
+                ctx.arc(i * 250 + 100, 120 + Math.sin(i) * 30, 40, 0, Math.PI * 2);
+                ctx.arc(i * 250 + 130, 110 + Math.sin(i) * 30, 50, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Parallax Distant Mountains
+            ctx.save();
+            ctx.translate(-cameraX * 0.5, 0);
+            ctx.fillStyle = gameState.currentZone === 3 ? "#312e81" : "#166534";
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 400 - 100, 520);
+                ctx.lineTo(i * 400 + 150, 280);
+                ctx.lineTo(i * 400 + 400, 520);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawWorld() {
+            ctx.save();
+            ctx.translate(-cameraX, 0);
+
+            // 1. Draw Platforms
+            platforms.forEach(p => {
+                if (p.type === 'ground') {
+                    // Ground Grass
+                    ctx.fillStyle = '#15803d';
+                    ctx.fillRect(p.x, p.y, p.w, 20);
+                    // Dirt Below
+                    ctx.fillStyle = '#78350f';
+                    ctx.fillRect(p.x, p.y + 20, p.w, p.h - 20);
+                } else {
+                    // Floating Wooden/Stone Platforms
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    ctx.fillStyle = '#451a03';
+                    ctx.fillRect(p.x, p.y + p.h - 4, p.w, 4);
+                    // Green top rim
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(p.x, p.y, p.w, 5);
+                }
+            });
+
+            // 2. Draw Coins
+            coins.forEach(c => {
+                if (!c.collected) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.stroke();
+
+                    // Inner detail
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.r - 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#b45309';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+
+            // 3. Draw Question Blocks (?)
+            questionBlocks.forEach(qb => {
+                ctx.save();
+                if (qb.solved) {
+                    ctx.fillStyle = '#64748b'; // Disabled grey block
+                    ctx.fillRect(qb.x, qb.y, qb.w, qb.h);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = 'bold 20px "Fredoka One"';
+                    ctx.fillText('✓', qb.x + 12, qb.y + 28);
+                } else {
+                    // Glowing Yellow Block
+                    ctx.fillStyle = '#eab308';
+                    ctx.fillRect(qb.x, qb.y, qb.w, qb.h);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.strokeRect(qb.x, qb.y, qb.w, qb.h);
+
+                    ctx.fillStyle = '#451a03';
+                    ctx.font = 'bold 22px "Fredoka One"';
+                    ctx.fillText('?', qb.x + 14, qb.y + 28);
+                }
+                ctx.restore();
+            });
+
+            // 4. Draw Gold Castle Goal
+            ctx.save();
+            // Castle Base
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(castleGoal.x, castleGoal.y, castleGoal.w, castleGoal.h);
+            // Towers
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(castleGoal.x - 15, castleGoal.y - 30, 45, castleGoal.h + 30);
+            ctx.fillRect(castleGoal.x + castleGoal.w - 30, castleGoal.y - 30, 45, castleGoal.h + 30);
+            // Roof Roof cones
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(castleGoal.x - 20, castleGoal.y - 30);
+            ctx.lineTo(castleGoal.x + 8, castleGoal.y - 70);
+            ctx.lineTo(castleGoal.x + 35, castleGoal.y - 30);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(castleGoal.x + castleGoal.w - 35, castleGoal.y - 30);
+            ctx.lineTo(castleGoal.x + castleGoal.w - 7, castleGoal.y - 70);
+            ctx.lineTo(castleGoal.x + castleGoal.w + 20, castleGoal.y - 30);
+            ctx.fill();
+
+            // Door
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.arc(castleGoal.x + castleGoal.w / 2, castleGoal.y + castleGoal.h - 10, 25, Math.PI, 0, false);
+            ctx.fillRect(castleGoal.x + castleGoal.w / 2 - 25, castleGoal.y + castleGoal.h - 35, 50, 35);
+            ctx.fill();
+
+            // Flag
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(castleGoal.x + castleGoal.w / 2 - 2, castleGoal.y - 90, 4, 30);
+            ctx.beginPath();
+            ctx.moveTo(castleGoal.x + castleGoal.w / 2 + 2, castleGoal.y - 90);
+            ctx.lineTo(castleGoal.x + castleGoal.w / 2 + 30, castleGoal.y - 75);
+            ctx.lineTo(castleGoal.x + castleGoal.w / 2 + 2, castleGoal.y - 60);
+            ctx.fill();
+            ctx.restore();
+
+            // 5. Draw Cute Explorer Character
+            drawCharacter();
+
+            ctx.restore();
+        }
+
+        function drawCharacter() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            // Flip horizontally if facing left
+            if (player.facing === 'left') {
+                ctx.translate(player.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            // Backpack
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-6, 16, 10, 20);
+
+            // Body / Jacket
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(6, 16, 24, 20);
+
+            // Pants
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(8, 34, 20, 10);
+
+            // Shoes
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(6, 42, 10, 6);
+            ctx.fillRect(20, 42, 10, 6);
+
+            // Head / Skin
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(18, 12, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(20, 8, 3, 5);
+
+            // Smile
+            ctx.beginPath();
+            ctx.arc(20, 14, 4, 0, Math.PI, false);
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Explorer Hat
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(4, 2, 28, 4); // Hat Rim
+            ctx.fillRect(10, -6, 16, 8); // Hat Crown
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            updatePlayer();
+            drawWorld();
+            requestAnimationFrame(gameLoop);
+        }
+
+        /* ==========================================
+           7. HUD & QUIZ LOGIC
+        ========================================== */
+        function updateHUD() {
+            document.getElementById('hudPlayerName').textContent = player.name || "Pengembara";
+            document.getElementById('hudLives').textContent = gameState.lives;
+            document.getElementById('hudCoins').textContent = gameState.coinsCollected;
+            document.getElementById('hudScore').textContent = gameState.score;
+        }
+
+        function triggerQuiz(qBlock) {
+            gameState.paused = true;
+            gameState.activeQuestionBlock = qBlock;
+
+            const qData = qBlock.questionData;
+            document.getElementById('quizNumber').textContent = `SOALAN ${qData.id} / 10`;
+            document.getElementById('quizScore').textContent = gameState.score;
+            document.getElementById('quizLives').textContent = gameState.lives;
+            document.getElementById('quizQuestion').textContent = qData.question;
+            document.getElementById('mathEquation').textContent = qData.eq;
+
+            // Render Options Buttons
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "quiz-opt-btn bg-slate-700 hover:bg-slate-600 border-2 border-slate-600 hover:border-amber-400 text-slate-100 font-bold p-3.5 rounded-2xl flex items-center gap-3 transition text-left text-base md:text-lg";
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-800 text-amber-300 font-game flex items-center justify-center border border-slate-600">${labels[idx]}</span>
+                    <span>${opt}</span>
+                `;
+                btn.onclick = () => selectAnswer(idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Hide previous feedback
+            document.getElementById('quizFeedback').classList.add('hidden');
+            document.getElementById('btnContinueQuiz').classList.add('hidden');
+
+            // Show Modal
+            document.getElementById('screenQuiz').classList.remove('hidden');
+        }
+
+        function selectAnswer(chosenIdx) {
+            const qBlock = gameState.activeQuestionBlock;
+            const qData = qBlock.questionData;
+            const isCorrect = (chosenIdx === qData.answer);
+
+            // Disable option buttons
+            const optBtns = document.querySelectorAll('.quiz-opt-btn');
+            optBtns.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === qData.answer) {
+                    btn.classList.remove('bg-slate-700', 'border-slate-600');
+                    btn.classList.add('bg-emerald-600', 'border-emerald-400', 'text-white');
+                } else if (idx === chosenIdx && !isCorrect) {
+                    btn.classList.remove('bg-slate-700', 'border-slate-600');
+                    btn.classList.add('bg-rose-600', 'border-rose-400', 'text-white');
+                }
+            });
+
+            // Record History for Review
+            gameState.userAnswersHistory.push({
+                questionId: qData.id,
+                questionText: qData.question,
+                eqText: qData.eq,
+                chosenAnswerText: qData.options[chosenIdx],
+                correctAnswerText: qData.options[qData.answer],
+                isCorrect: isCorrect,
+                explanation: qData.explanation
+            });
+
+            // Update Stats & Feedback
+            const feedbackEl = document.getElementById('quizFeedback');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackBody = document.getElementById('feedbackBody');
+
+            if (isCorrect) {
+                soundCorrect();
+                gameState.score += 5;
+                gameState.correctCount++;
+                feedbackTitle.className = "font-game text-lg mb-1 text-emerald-400 flex items-center gap-2";
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check text-2xl"></i> Syabas! Jawapan kamu betul! (+5 markah)`;
+                feedbackBody.textContent = qData.explanation;
+            } else {
+                soundWrong();
+                gameState.score = Math.max(0, gameState.score - 1);
+                gameState.lives--;
+                gameState.wrongCount++;
+                feedbackTitle.className = "font-game text-lg mb-1 text-rose-400 flex items-center gap-2";
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-2xl"></i> Jangan risau, cuba lagi pada soalan seterusnya. (-1 markah & -1 nyawa)`;
+                feedbackBody.innerHTML = `<strong>Cara Pengiraan:</strong> ${qData.explanation}`;
+            }
+
+            qBlock.solved = true;
+            gameState.answeredQuestions.add(qBlock.id);
+
+            updateHUD();
+            feedbackEl.classList.remove('hidden');
+            document.getElementById('btnContinueQuiz').classList.remove('hidden');
+        }
+
+        function continueAfterQuiz() {
+            document.getElementById('screenQuiz').classList.add('hidden');
+            gameState.paused = false;
+
+            // Check Game Over Condition
+            if (gameState.lives <= 0) {
+                triggerGameOver();
+            }
+        }
+
+        /* ==========================================
+           8. GAME FLOW & SCREENS
+        ========================================== */
+        function startGame() {
+            initAudio();
+
+            const nameInput = document.getElementById('inputName').value.trim();
+            const classInput = document.getElementById('inputClass').value.trim();
+
+            player.name = nameInput || "Pengembara Comel";
+            player.class = classInput || "4 Gemilang";
+
+            // Reset Game State
+            gameState.active = true;
+            gameState.paused = false;
+            gameState.score = 0;
+            gameState.lives = 3;
+            gameState.coinsCollected = 0;
+            gameState.correctCount = 0;
+            gameState.wrongCount = 0;
+            gameState.answeredQuestions.clear();
+            gameState.userAnswersHistory = [];
+
+            // Reset Player Pos
+            player.x = 80;
+            player.y = 400;
+            player.vx = 0;
+            player.vy = 0;
+
+            initLevel();
+            resizeCanvas();
+            updateHUD();
+
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('screenStart').classList.add('hidden');
+            document.getElementById('screenGameOver').classList.add('hidden');
+            document.getElementById('screenVictory').classList.add('hidden');
+        }
+
+        function pauseGame() {
+            gameState.paused = !gameState.paused;
+            alert(gameState.paused ? "Permainan Diperlahankan / Dijeda. Tekan OK untuk menyambung." : "Permainan Diteruskan!");
+            if (gameState.paused) gameState.paused = false;
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        function triggerGameOver() {
+            gameState.active = false;
+            document.getElementById('goQuestions').textContent = `${gameState.answeredQuestions.size}/10`;
+            document.getElementById('goCoins').textContent = gameState.coinsCollected;
+            document.getElementById('goScore').textContent = gameState.score;
+            document.getElementById('screenGameOver').classList.remove('hidden');
+        }
+
+        function triggerVictory() {
+            gameState.active = false;
+            soundVictory();
+
+            // Save to Local Leaderboard
+            saveToLeaderboard({
+                name: player.name,
+                class: player.class,
+                score: gameState.score,
+                correct: gameState.correctCount,
+                coins: gameState.coinsCollected,
+                date: new Date().toLocaleDateString('ms-MY')
+            });
+
+            document.getElementById('vicScore').textContent = gameState.score;
+            document.getElementById('vicCorrect').textContent = `${gameState.correctCount}/10`;
+            document.getElementById('vicCoins').textContent = gameState.coinsCollected;
+            document.getElementById('vicLives').textContent = gameState.lives;
+
+            // Dynamic Encouragement
+            const encEl = document.getElementById('victoryEncouragement');
+            if (gameState.score >= 40) {
+                encEl.textContent = "🌟 Hebat! Kamu berjaya menguasai tolak nilai wang dengan cemerlang!";
+            } else if (gameState.score >= 20) {
+                encEl.textContent = "👍 Bagus! Teruskan berlatih untuk menjadi lebih mahir.";
+            } else {
+                encEl.textContent = "💪 Usaha yang baik! Cuba lagi dan kamu pasti boleh mendapat markah lebih tinggi!";
+            }
+
+            document.getElementById('screenVictory').classList.remove('hidden');
+        }
+
+        /* ==========================================
+           9. LEADERBOARD & CERTIFICATE SYSTEM
+        ========================================== */
+        function saveToLeaderboard(entry) {
+            let leaderboard = JSON.parse(localStorage.getItem('pengembara_wang_lb') || '[]');
+            leaderboard.push(entry);
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10); // Top 10
+            localStorage.setItem('pengembara_wang_lb', JSON.stringify(leaderboard));
+        }
+
+        function showLeaderboard() {
+            const listContainer = document.getElementById('leaderboardList');
+            let leaderboard = JSON.parse(localStorage.getItem('pengembara_wang_lb') || '[]');
+
+            listContainer.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                listContainer.innerHTML = `<div class="text-center text-slate-400 py-8">Belum ada rekod pencapaian. Jadilah yang pertama!</div>`;
+            } else {
+                leaderboard.forEach((item, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "bg-slate-900 border border-slate-700 p-3 rounded-2xl flex justify-between items-center text-sm";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-full ${idx === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300'} font-game flex items-center justify-center text-xs">
+                                ${idx + 1}
+                            </span>
+                            <div>
+                                <div class="font-bold text-slate-100">${item.name}</div>
+                                <div class="text-xs text-slate-400">Kelas: ${item.class} | ${item.date}</div>
+                            </div>
+                        </div>
+                        <div class="font-game text-amber-400 text-base">${item.score} PTS</div>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            document.getElementById('screenLeaderboard').classList.remove('hidden');
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('screenLeaderboard').classList.add('hidden');
+        }
+
+        /* REVIEW QUESTIONS MODAL */
+        function reviewQuestionsModal() {
+            const reviewList = document.getElementById('reviewList');
+            reviewList.innerHTML = '';
+
+            gameState.userAnswersHistory.forEach((item, index) => {
+                const box = document.createElement('div');
+                box.className = `p-4 rounded-2xl border ${item.isCorrect ? 'bg-emerald-950/40 border-emerald-500/40' : 'bg-rose-950/40 border-rose-500/40'}`;
+                box.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-game ${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'}">Soalan ${item.questionId}</span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold ${item.isCorrect ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                            ${item.isCorrect ? 'BETUL' : 'SALAH'}
+                        </span>
+                    </div>
+                    <p class="font-semibold text-slate-200 mb-1">${item.questionText}</p>
+                    <div class="font-game text-amber-300 mb-2">${item.eqText}</div>
+                    <div class="text-xs space-y-1 text-slate-300">
+                        <div>Jawapan Anda: <span class="font-bold ${item.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${item.chosenAnswerText}</span></div>
+                        ${!item.isCorrect ? `<div>Jawapan Tepat: <span class="font-bold text-emerald-300">${item.correctAnswerText}</span></div>` : ''}
+                        <div class="text-slate-400 mt-2 bg-slate-900/60 p-2 rounded-xl border border-slate-800">${item.explanation}</div>
+                    </div>
+                `;
+                reviewList.appendChild(box);
+            });
+
+            document.getElementById('screenReview').classList.remove('hidden');
+        }
+
+        function closeReview() {
+            document.getElementById('screenReview').classList.add('hidden');
+        }
+
+        /* GENERATE PRINTABLE DIGITAL CERTIFICATE */
+        function generateCertificate() {
+            document.getElementById('certName').textContent = player.name || "Muhammad Ali";
+            document.getElementById('certClass').textContent = `Kelas: ${player.class || "4 Gemilang"}`;
+            document.getElementById('certScore').textContent = gameState.score;
+            document.getElementById('certCorrect').textContent = `${gameState.correctCount}/10`;
+            document.getElementById('certCoins').textContent = gameState.coinsCollected;
+            document.getElementById('certDate').textContent = `Tarikh: ${new Date().toLocaleDateString('ms-MY')}`;
+
+            const cert = document.getElementById('certificateContainer');
+            cert.classList.remove('hidden');
+            cert.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeCertificate() {
+            document.getElementById('certificateContainer').classList.add('hidden');
+        }
+
+        /* ==========================================
+           10. INITIALIZATION
+        ========================================== */
+        window.onload = function() {
+            setupTouchControls();
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
